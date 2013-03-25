@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Chemical identifier conversion - demo page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+	
+	html, body{
+		background-color: #0D3B20;
+	}
+	
+    body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+    }
+	
+	.btn {
+		padding-left: 15px;
+		padding-right: 15px;
+		margin-right: 10px;
+		margin-left: 10px;
+		position: relative;
+		top: -5px;
+	}
+	.result{
+		position: relative;
+		left: 68px;
+	}
+	.try{
+		margin-bottom: 30px;
+	}
+	.hero-unit{
+		background-color: #EBF2DC;
+	}
+	.icon-beaker{
+		padding-left: 30px;
+	}
+	  
+    </style>
+    <link href="css/bootstrap-responsive.css" rel="stylesheet">
+	<link href="css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="jshtml5shiv.js"></script>
+    <![endif]-->
+	
+
+
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="#">Chemical identifier conversion</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li><a href="https://github.com/miike/ChemSpiderPHPWrapper">Source<i class='icon-github-sign '></i></a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+
+      <!-- Main hero unit for a primary marketing message or call to action -->
+      <div class="hero-unit">
+        <h1>Identifier conversion<i class="icon-beaker"></i></h1>
+        <p>This page utilises the Chemspider PHP wrapper to perform some basic conversion between chemical identifiers. </p>
+		<p class='try'>Try it out below!</p>
+		
+
+		Convert
+		<input class="input-xxlarge structure" data-toggle="tooltip" type="text" title="The structure string you wish to convert">
+		from
+		<div class="btn-group">
+			<button class="btn dropdown-toggle from" data-toggle="dropdown" title="Convert from this format">
+			CSID
+			<span class="caret"></span>
+			</button>
+			<ul class="dropdown-menu ufrom">
+                  <li class='lfrom' value="csid"><a href="#">CSID</a></li>
+                  <li class='lfrom' value="inchikey"><a href="#">InChIKey</a></li>
+                  <li class='lfrom' value="inchi"><a href="#">InChI</a></li>
+                  <li class='lfrom' value="smiles"><a href="#">SMILES</a></li>
+                  <li class='lfrom' value="mol"><a href="#">Mol</a></li>
+            </ul>
+		</div>
+		to
+		<div class="btn-group">
+			<button class="btn dropdown-toggle to" data-toggle="dropdown" title="Convert to this format">
+			CSID
+			<span class="caret"></span>
+			</button>
+			<ul class="dropdown-menu uto">
+                  <li class='lto' value="csid"><a href="#">CSID</a></li>
+                  <li class='lto' value="inchikey"><a href="#">InChIKey</a></li>
+                  <li class='lto' value="inchi"><a href="#">InChI</a></li>
+                  <li class='lto' value="smiles"><a href="#">SMILES</a></li>
+                  <li class='lto' value="mol"><a href="#">Mol</a></li>
+			</ul>
+		</div>
+		<button class="btn btn-primary convert" type="button">Convert</button>
+
+		<div class="conversions"></div>
+		
+      </div>
+	  
+	  
+    </div>
+
+    <script src="jquery.min.js"></script>
+	<script src="js/bootstrap.js"></script>
+	
+	<script type="text/javascript">
+	$(function() {
+		var counter = 1;
+	
+		$(".result").hide();
+		$(".structure").tooltip();
+		$(".convert").click(function () {
+			
+			
+			var to = $(".to").text();
+			var from = $(".from").text();
+			var structure = $(".structure").val();
+			if (structure == ""){
+				alert("You haven't entered anything in the structure box");
+			}
+			if (to == from){
+				alert('You can figure this one out.');
+			}
+			else{
+				convert(structure, from.toLowerCase(), to.toLowerCase());
+			}
+			
+		});
+		
+		$(".lto").click(function () {
+			$(".to").html($(this).text() + '<span class="caret"></span>');
+		});
+		
+		$(".lfrom").click(function () {
+			$(".from").html($(this).text() + '<span class="caret"></span>');
+		});
+	});
+	
+	//jquery ajax request to the api wrapper
+	
+	function convert(structure, from, to){
+		var request = $.ajax({
+			url: "chemspider.php",
+			type: "POST",
+			data: {'structure':structure, 'from':from, 'to':to},
+		});
+		
+		$(".convert").html('<i class="icon-spinner icon-spin"></i>');
+		
+		request.done(function(msg){
+			$(".conversions").append('<p><span class="badge">' + counter + '</span>' + '<span class="badge badge-success">' +  msg + '</span></p>');
+			$(".convert").html('Convert');
+		});
+		
+		request.fail(function(jqXHR, t) {
+			$(".conversions").append('<span class="badge badge-important">AJAX request failed ' + t + '</span></p>');
+			$(".convert").html('Convert');
+		});
+		
+		counter += 1;
+	
+	}
+	</script>
+
+  </body>
+</html>
