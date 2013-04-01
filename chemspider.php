@@ -1,7 +1,6 @@
 <?php
 //this is a loose wrapper for ChemSpider API conversion utilities
-//https://github.com/miike/ChemSpiderPHPWrapper
-
+//github.com/miike
 error_reporting(E_ALL ^ E_NOTICE ^ E_WARNING);
 
 $token = ""; //your chemspider API token goes here (required for some functions)
@@ -117,6 +116,17 @@ class Conversion
 		return $this->parser($xml);
 	}
 	
+	function openbabel($structure, $from, $to){
+		$what = urlencode($structure);
+		$from = urlencode($from);
+		$to = urlencode($to);
+		
+		$url = "http://www.chemspider.com/OpenBabel.asmx/Convert?what=$what&fromFormat=$from&toFormat=$to";
+		$xml = $this->handler($url);
+		return $this->parser($xml);
+	
+	}
+	
 	function convert($structure, $toformat, $fromformat){
 		//$structure - input structure (string)
 		//$toformat - input structure format (string)
@@ -162,19 +172,107 @@ class Conversion
 	}
 }
 
+class Search
+{
+	function handler($url){
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		$data = curl_exec($ch);
+		if (!($data)){
+			echo "Failed to connect to Chemspider";
+			return -1;
+		}
+		$xml = simplexml_load_string($data);
+		
+		if (!($xml)){
+			//echo "Failed to parse Chemspider XML\n\n";
+			print_r($data);
+			return -1;
+		}
+		return $xml;
+	}
+	
+	function simple($searchterm, $token){ //takes a search argument, returns CSID
+		$term = urlencode($searchterm);
+		$url = "http://www.chemspider.com/Search.asmx/SimpleSearch?query=$term&token=$token";
+		//echo $url;
+		$xml = $this->handler($url);
+		if ($xml != -1){
+			$csid = $xml->int;
+			return $csid;
+		}
+		else{
+			return -1;
+		}
+	}
+	
+	function compoundInfo($csid, $token){
+		$url = "http://www.chemspider.com/Search.asmx/GetCompoundInfo?CSID=$csid&token=$token";
+		$xml = $this->handler($url);
+		
+		if ($xml != -1){
+			$compound = array();
+			$compound['csid'] = (string)$xml->CSID;
+			$compound['inchi'] = (string)$xml->InChI;
+			$compound['inchikey'] = (string)$xml->InChIKey;
+			$compound['smiles'] = (string)$xml->SMILES;
+			return $compound;
+		}
+		else{
+			return -1;
+		}
+	}
+	
+	function extendedCompoundInfo($csid, $token){
+		$url = "http://www.chemspider.com/MassSpecAPI.asmx/GetExtendedCompoundInfo?CSID=$csid&token=$token";
+		$xml = $this->handler($url);
+		
+		if ($xml != -1){
+			$compound = array();
+			$compound['csid'] = (string)$xml->CSID;
+			$compound['inchi'] = (string)$xml->InChI;
+			$compound['inchikey'] = (string)$xml->InChIKey;
+			$compound['smiles'] = (string)$xml->SMILES;
+			$compoound['mf'] = (string)$xml->MF;
+			$compound['avgmass'] = (string)$xml->AverageMass;
+			$compound['mw'] = (string)$xml->MolecularWeight;
+			$compound['mm'] = (string)$xml->MonoisotopicMass;
+			$compound['nm'] = (string)$xml->NominalMass;
+			$compound['alogp'] = (float)$xml->ALogP;
+			$compound['xlogp'] = (float)$xml->XLogP;
+			$compound['common'] = (string)$xml->CommonName;
+			return $compound;
+		}
+		else{
+			return -1;
+		}
+	
+	
+	}
+
+
+}
+
 //conversion list (function names)
 //csid2mol, inchikey2csid, inchi2csid, inchi2smiles, smiles2inchi, 
 //inchi2inchikey, inchi2mol, mol2inchi, mol2inchikey, inchikey2mol
 
-//FUTURE implement openbabels 'convert' function
-
 //EXAMPLES BELOW
+
+//CONVERSION EXAMPLES
 
 $converter = new Conversion();
 //echo $converter->convert("[Na+].[Cl-]", "smiles", "inchi");
 //echo $converter->convert("InChI=1S/H2O/h1H2", "inchi", "csid");
 //echo $converter->convert("FAPWRFPIFSIZLT-UHFFFAOYSA-M", "inchikey", "csid");
 //echo $converter->convert("InChI=1S/H2O/h1H2", "inchi", "smiles");
+//echo $converter->openbabel("InChI=1S/H2O/h1H2", "inchi", "png");
+
+//SEARCH EXAMPLES
+$searcher = new Search();
+//print_r($searcher->compoundInfo(5044, $token));
+//print_r($searcher->extendedCompoundInfo(5044, $token));
+
 
 //determine if it's an ajax request
 if ($_POST){
